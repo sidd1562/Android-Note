@@ -1,0 +1,77 @@
+// Inside your Activity or Fragment
+private lateinit var audioManager: AudioManager
+private lateinit var seekBar: SeekBar
+private lateinit var seekBarText: TextView
+
+// Initializing AudioManager and SeekBar in onCreate or similar
+audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+seekBar = findViewById(R.id.seekbar2)
+seekBarText = findViewById(R.id.seekBarText2)
+
+// Set initial progress based on current volume level
+val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+seekBar.progress = (currentVolume.toFloat() / audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * 100).toInt()
+updateSeekBarText(currentVolume)
+
+seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+        if (fromUser) {
+            // Update the system volume based on SeekBar progress
+            val volume = (progress / 100.0 * audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)).toInt()
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0)
+            updateSeekBarText(volume)
+        }
+    }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+})
+
+// Method to update SeekBar text with current volume percentage
+private fun updateSeekBarText(volume: Int) {
+    val volumePercentage = (volume.toFloat() / audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * 100).toInt()
+    seekBarText.text = "$volumePercentage%"  // Update the volume percentage
+}
+
+// Implement GestureListener for scroll events
+val gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+    override fun onScroll(e1: MotionEvent?, e2: MotionEvent?, distanceX: Float, distanceY: Float): Boolean {
+        // Detect scroll movement (distanceY controls volume)
+        if (distanceY > 0) {
+            increaseVolume()
+        } else if (distanceY < 0) {
+            decreaseVolume()
+        }
+        return true
+    }
+})
+
+// Set gesture listener on your layout or view
+volumeLayout.setOnTouchListener { _, event ->
+    gestureDetector.onTouchEvent(event)
+    true
+}
+
+// Increase volume method
+private fun increaseVolume() {
+    val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+    val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+
+    if (currentVolume < maxVolume) {
+        val newVolume = currentVolume + 1
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+        seekBar.progress = (newVolume.toFloat() / maxVolume * 100).toInt()
+        updateSeekBarText(newVolume)
+    }
+}
+
+// Decrease volume method
+private fun decreaseVolume() {
+    val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+    if (currentVolume > 0) {
+        val newVolume = currentVolume - 1
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
+        seekBar.progress = (newVolume.toFloat() / audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC) * 100).toInt()
+        updateSeekBarText(newVolume)
+    }
+}
